@@ -31,7 +31,7 @@ jobs:
       with:
         name: flashcardProxy # Must match the function name
         runtime: nodejs18 # Match the runtime used in manual deployment
-        region: YOUR_GCP_REGION # Replace with your GCP region
+        region: europe-west1 # Replace with your GCP region
         entry_point: flashcardProxy # Must match the exported function name in index.js
         source_dir: ./ # Deploy from the root of the repo
         # project_id: ${{ secrets.GCP_PROJECT_ID }} # Usually inferred from auth context
