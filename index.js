@@ -18,8 +18,14 @@ exports.flashcardProxy = async (req, res) => {
     if (!appsScriptUrl || !secretKey) {
         console.error('Missing required environment variables: GOOGLE_APPS_SCRIPT_URL or GOOGLE_APPS_SCRIPT_SECRET');
         // Send a 500 Internal Server Error response
-        return res.status(500).json({ error: 'Server configuration error.' });
+        if (!appsappsScriptUrl) {
+            return res.status(500).json({ error: 'Server configuration error. Missing appsScriptUrl' });
+        }
+        if (!secretKey) {
+            return res.status(500).json({ error: 'Server configuration error. Missing secretKey' });
+        }
     }
+    
 
     // --- CORS Headers (Allow requests from any origin - adjust if needed) ---
     // Set CORS headers for all responses, including errors and preflight
