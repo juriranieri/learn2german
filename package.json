@@ -1,0 +1,16 @@
+{
+  "name": "flashcard-proxy",
+  "version": "1.0.0",
+  "description": "Google Cloud Function proxy for flashcard Google Apps Script",
+  "main": "index.js",
+  "engines": {
+    "node": "18"
+  },
+  "scripts": {
+    "start": "functions-framework --target=flashcardProxy"
+  },
+  "dependencies": {
+     "@google-cloud/functions-framework": "^3.0.0"
+  },
+  "devDependencies": {}
+}
