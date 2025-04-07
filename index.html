@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>German Flashcards</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Basic styles for card flip */
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden; /* Safari */
+            backface-visibility: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem; /* Add padding inside the card face */
+        }
+        .card-back {
+            transform: rotateY(180deg);
+        }
+        /* Hide scrollbar for cleaner look */
+        body {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none;  /* IE and Edge */
+        }
+        body::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+        /* Ensure content doesn't touch edges on small screens */
+        .container {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+        @media (min-width: 640px) { /* sm breakpoint */
+            .container {
+                max-width: 640px; /* Adjust max-width as needed */
+                margin-left: auto;
+                margin-right: auto;
+            }
+        }
+         /* Custom styles for buttons */
+        .btn {
+            @apply px-4 py-2 rounded-lg font-semibold text-white shadow-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-opacity-75;
+        }
+        .btn-primary {
+            @apply bg-blue-600 hover:bg-blue-700 focus:ring-blue-500;
+        }
+        .btn-secondary {
+             @apply bg-gray-500 hover:bg-gray-600 focus:ring-gray-400;
+        }
+        .btn-red {
+            @apply bg-red-500 hover:bg-red-600 focus:ring-red-400;
+        }
+        .btn-green {
+            @apply bg-green-500 hover:bg-green-600 focus:ring-green-400;
+        }
+        .btn-yellow {
+             @apply bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-400;
+        }
+        .btn-disabled {
+            @apply bg-gray-400 cursor-not-allowed;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans flex items-center justify-center min-h-screen">
+
+    <div class="container w-full max-w-md p-4">
+
+        <div id="login-section" class="bg-white p-6 rounded-lg shadow-lg">
+            <h1 class="text-2xl font-bold mb-4 text-center text-gray-800">Login</h1>
+            <form id="login-form">
+                <div class="mb-4">
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="password" name="password" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <button type="submit" class="btn btn-primary w-full">Login</button>
+                <p id="login-error" class="text-red-500 text-sm mt-2 text-center"></p>
+            </form>
+        </div>
+
+        <div id="app-section" class="hidden">
+            <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+                 <div class="flex justify-between items-center mb-4">
+                    <h1 class="text-2xl font-bold text-gray-800">German Flashcards</h1>
+                     <button id="logout-button" class="btn btn-secondary text-sm">Logout</button>
+                 </div>
+
+                <div id="message-area" class="text-center text-gray-600 mb-4"></div>
+
+                <div id="card-container" class="mb-4" style="perspective: 1000px;">
+                     <div id="no-cards-message" class="text-center text-gray-500 py-10 hidden">No cards due for review.</div>
+                     <div id="card" class="card bg-blue-100 rounded-lg shadow-md mx-auto w-full h-48 cursor-pointer hidden">
+                         <div class="card-inner">
+                             <div class="card-face card-front bg-gradient-to-br from-blue-400 to-blue-600 text-white rounded-lg">
+                                 <p id="card-german" class="text-2xl font-semibold"></p>
+                             </div>
+                             <div class="card-face card-back bg-gradient-to-br from-green-400 to-green-600 text-white rounded-lg">
+                                 <p id="card-english" class="text-xl"></p>
+                             </div>
+                         </div>
+                     </div>
+                </div>
+
+                <div id="review-buttons" class="flex justify-around mb-4 space-x-2 hidden">
+                    <button id="again-button" class="btn btn-red flex-1">Again (1m)</button>
+                    <button id="good-button" class="btn btn-yellow flex-1">Good (10m)</button>
+                    <button id="easy-button" class="btn btn-green flex-1">Easy (4d)</button>
+                </div>
+                 <button id="show-answer-button" class="btn btn-primary w-full mb-6 hidden">Show Answer</button>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-xl font-bold mb-4 text-gray-700">Add New Card</h2>
+                <form id="add-card-form">
+                    <div class="mb-3">
+                        <label for="new-german" class="block text-sm font-medium text-gray-700 mb-1">German</label>
+                        <input type="text" id="new-german" name="new-german" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="mb-4">
+                        <label for="new-english" class="block text-sm font-medium text-gray-700 mb-1">English</label>
+                        <input type="text" id="new-english" name="new-english" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <button type="submit" id="add-card-submit" class="btn btn-primary w-full">Add Card</button>
+                    <p id="add-card-message" class="text-sm mt-2 text-center"></p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        // !!! IMPORTANT: Replace with your deployed Google Apps Script Web App URL !!!
+        // Local storage keys
+        const AUTH_KEY = 'flashcard_auth';
+        const CARD_DATA_KEY = 'flashcard_data'; // Stores review progress
+
+        // --- DOM Elements ---
+        const loginSection = document.getElementById('login-section');
+        const appSection = document.getElementById('app-section');
+        const loginForm = document.getElementById('login-form');
+        const passwordInput = document.getElementById('password');
+        const loginError = document.getElementById('login-error');
+        const logoutButton = document.getElementById('logout-button');
+        const messageArea = document.getElementById('message-area');
+        const cardContainer = document.getElementById('card-container');
+        const cardElement = document.getElementById('card');
+        const cardGerman = document.getElementById('card-german');
+        const cardEnglish = document.getElementById('card-english');
+        const noCardsMessage = document.getElementById('no-cards-message');
+        const showAnswerButton = document.getElementById('show-answer-button');
+        const reviewButtons = document.getElementById('review-buttons');
+        const againButton = document.getElementById('again-button');
+        const goodButton = document.getElementById('good-button');
+        const easyButton = document.getElementById('easy-button');
+        const addCardForm = document.getElementById('add-card-form');
+        const newGermanInput = document.getElementById('new-german');
+        const newEnglishInput = document.getElementById('new-english');
+        const addCardSubmit = document.getElementById('add-card-submit');
+        const addCardMessage = document.getElementById('add-card-message');
+
+        // --- State ---
+        let allCards = []; // Raw cards from sheet: [ [German, English], ... ]
+        let cardReviewData = {}; // { 'german|english': { interval, easeFactor, nextReviewDate }, ... }
+        let currentCard = null; // The card object currently being reviewed
+        let dueCards = []; // Cards ready for review today
+
+        // --- Spaced Repetition Constants (Simplified) ---
+        const DEFAULT_EASE_FACTOR = 2.5;
+        const MIN_EASE_FACTOR = 1.3;
+        const AGAIN_INTERVAL = 1 / (24 * 60); // 1 minute in days
+        const GOOD_INTERVAL = 10 / (24 * 60); // 10 minutes in days
+        const EASY_INTERVAL = 4; // 4 days
+
+        // --- Utility Functions ---
+        function getTodayDateString() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Normalize to start of day
+            return today.toISOString();
+        }
+
+        function addDays(dateString, days) {
+            const date = new Date(dateString);
+            date.setDate(date.getDate() + days);
+            return date.toISOString();
+        }
+
+        // --- Authentication ---
+        function checkAuth() {
+            if (localStorage.getItem(AUTH_KEY) === 'true') {
+                loginSection.classList.add('hidden');
+                appSection.classList.remove('hidden');
+                initializeApp();
+            } else {
+                loginSection.classList.remove('hidden');
+                appSection.classList.add('hidden');
+            }
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            loginError.textContent = '';
+            if (passwordInput.value === FRONTEND_PASSWORD) {
+                localStorage.setItem(AUTH_KEY, 'true');
+                checkAuth();
+            } else {
+                loginError.textContent = 'Incorrect password.';
+            }
+            passwordInput.value = ''; // Clear password field
+        }
+
+        function handleLogout() {
+            localStorage.removeItem(AUTH_KEY);
+            // Clear sensitive state on logout
+            allCards = [];
+            cardReviewData = {};
+            currentCard = null;
+            dueCards = [];
+            localStorage.removeItem(CARD_DATA_KEY); // Clear review progress
+            checkAuth();
+            // Reset UI elements
+            hideCard();
+            messageArea.textContent = '';
+            addCardMessage.textContent = '';
+        }
+
+        // --- Data Fetching & Loading ---
+        async function fetchCards() {
+            messageArea.textContent = 'Loading cards...';
+            showAnswerButton.disabled = true;
+            hideCard(); // Hide card while loading
+
+            if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL') {
+                 messageArea.textContent = 'Error: Apps Script URL not configured in the code.';
+                 return;
+            }
+             if (!SECRET_KEY || SECRET_KEY === 'YOUR_SECRET_PASSWORD') {
+                 messageArea.textContent = 'Error: Secret Key not configured in the code.';
+                 return;
+            }
+
+            try {
+                const response = await fetch(`${APPS_SCRIPT_URL}?secret=${SECRET_KEY}`);
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error || 'Unknown error'}`);
+                }
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                allCards = data.cards || [];
+                messageArea.textContent = ''; // Clear loading message
+                loadReviewData(); // Load progress from local storage
+                prepareDueCards(); // Find cards due for review
+                showNextCard(); // Display the first due card
+
+            } catch (error) {
+                console.error('Error fetching cards:', error);
+                messageArea.textContent = `Error loading cards: ${error.message}. Check console and Apps Script logs.`;
+                hideCard(); // Ensure card is hidden on error
+            } finally {
+                showAnswerButton.disabled = false;
+            }
+        }
+
+        function loadReviewData() {
+            const storedData = localStorage.getItem(CARD_DATA_KEY);
+            cardReviewData = storedData ? JSON.parse(storedData) : {};
+
+            // Initialize review data for any new cards fetched from the sheet
+            const today = getTodayDateString();
+            allCards.forEach(cardPair => {
+                const cardId = generateCardId(cardPair);
+                if (!cardReviewData[cardId]) {
+                    cardReviewData[cardId] = {
+                        interval: 0, // Never reviewed
+                        easeFactor: DEFAULT_EASE_FACTOR,
+                        nextReviewDate: today, // Due immediately
+                        german: cardPair[0], // Store original text for display
+                        english: cardPair[1]
+                    };
+                } else {
+                    // Ensure existing data has german/english fields (for older data structures)
+                    if (!cardReviewData[cardId].german) cardReviewData[cardId].german = cardPair[0];
+                    if (!cardReviewData[cardId].english) cardReviewData[cardId].english = cardPair[1];
+                }
+            });
+            saveReviewData(); // Save potentially updated data
+        }
+
+        function saveReviewData() {
+            localStorage.setItem(CARD_DATA_KEY, JSON.stringify(cardReviewData));
+        }
+
+        // --- Card Display and Logic ---
+         function generateCardId(cardPair) {
+            // Simple ID based on joining German and English text
+            // Assumes unique pairs. Consider row index if pairs aren't unique.
+            return `${cardPair[0]}|${cardPair[1]}`;
+        }
+
+        function prepareDueCards() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Start of today
+
+            dueCards = Object.keys(cardReviewData)
+                .map(id => ({ id, ...cardReviewData[id] })) // Combine id and data
+                .filter(card => {
+                    const nextReview = new Date(card.nextReviewDate);
+                    nextReview.setHours(0, 0, 0, 0); // Normalize to start of day
+                    return nextReview <= today;
+                })
+                .sort((a, b) => new Date(a.nextReviewDate) - new Date(b.nextReviewDate)); // Show oldest due first
+        }
+
+        function showNextCard() {
+             // Reset card state
+            cardElement.classList.remove('flipped');
+            reviewButtons.classList.add('hidden');
+            showAnswerButton.classList.remove('hidden');
+
+            if (dueCards.length > 0) {
+                currentCard = dueCards.shift(); // Get the next due card
+                cardGerman.textContent = currentCard.german;
+                cardEnglish.textContent = currentCard.english;
+                cardElement.classList.remove('hidden');
+                noCardsMessage.classList.add('hidden');
+            } else {
+                // No more cards due today
+                currentCard = null;
+                hideCard();
+                noCardsMessage.classList.remove('hidden');
+                messageArea.textContent = 'All cards reviewed for now!';
+            }
+        }
+
+        function hideCard() {
+            cardElement.classList.add('hidden');
+            showAnswerButton.classList.add('hidden');
+            reviewButtons.classList.add('hidden');
+        }
+
+        function handleShowAnswer() {
+            if (!currentCard) return;
+            cardElement.classList.add('flipped');
+            showAnswerButton.classList.add('hidden');
+            reviewButtons.classList.remove('hidden');
+        }
+
+        // --- Spaced Repetition Update ---
+        function updateCardReview(quality) {
+            if (!currentCard) return;
+
+            const cardId = currentCard.id;
+            let review = cardReviewData[cardId];
+            const isFirstReview = review.interval === 0;
+            const today = getTodayDateString();
+
+            let nextInterval;
+            let nextEaseFactor = review.easeFactor;
+
+            switch (quality) {
+                case 'again':
+                    nextInterval = AGAIN_INTERVAL; // Review again soon
+                    // Optional: Slightly decrease ease factor on 'again'
+                    nextEaseFactor = Math.max(MIN_EASE_FACTOR, review.easeFactor - 0.2);
+                    // Put card back in the queue for this session if desired
+                    // For simplicity here, we just schedule it for 1 min later
+                    break;
+                case 'good':
+                    if (isFirstReview) {
+                        nextInterval = GOOD_INTERVAL; // 10 minutes
+                    } else {
+                        nextInterval = Math.max(review.interval + 1 / (24 * 60 * 60), review.interval * review.easeFactor); // Ensure interval increases slightly
+                    }
+                     // No change to ease factor for 'good' in this simplified model
+                    break;
+                case 'easy':
+                    if (isFirstReview) {
+                        nextInterval = EASY_INTERVAL; // 4 days
+                    } else {
+                         // Increase interval significantly
+                        nextInterval = Math.max(review.interval + 1 / (24 * 60 * 60), review.interval * review.easeFactor * 1.5); // Boost interval more
+                    }
+                    // Increase ease factor for 'easy'
+                    nextEaseFactor = review.easeFactor + 0.15;
+                    break;
+                default:
+                    return; // Should not happen
+            }
+
+            // Update review data
+            review.interval = nextInterval;
+            review.easeFactor = nextEaseFactor;
+            review.nextReviewDate = addDays(today, nextInterval); // Calculate next review date
+
+            // Save updated data
+            saveReviewData();
+
+            // Show the next card
+            showNextCard();
+        }
+
+
+        // --- Add Card ---
+        async function handleAddCard(event) {
+            event.preventDefault();
+            const german = newGermanInput.value.trim();
+            const english = newEnglishInput.value.trim();
+            addCardMessage.textContent = '';
+            addCardSubmit.disabled = true;
+            addCardSubmit.textContent = 'Adding...';
+            addCardSubmit.classList.add('btn-disabled');
+
+
+            if (!german || !english) {
+                addCardMessage.textContent = 'Please enter both German and English words.';
+                addCardSubmit.disabled = false;
+                addCardSubmit.textContent = 'Add Card';
+                addCardSubmit.classList.remove('btn-disabled');
+                return;
+            }
+
+             if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL') {
+                 addCardMessage.textContent = 'Error: Apps Script URL not configured.';
+                 addCardSubmit.disabled = false;
+                 addCardSubmit.textContent = 'Add Card';
+                 addCardSubmit.classList.remove('btn-disabled');
+                 return;
+            }
+             if (!SECRET_KEY || SECRET_KEY === 'YOUR_SECRET_PASSWORD') {
+                 addCardMessage.textContent = 'Error: Secret Key not configured.';
+                 addCardSubmit.disabled = false;
+                 addCardSubmit.textContent = 'Add Card';
+                 addCardSubmit.classList.remove('btn-disabled');
+                 return;
+            }
+
+
+            try {
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8', // Apps Script web apps expect text/plain for POST body
+                    },
+                    body: JSON.stringify({
+                        secret: SECRET_KEY,
+                        german: german,
+                        english: english
+                    })
+                });
+
+                // Check if response is OK, even if empty or not JSON
+                if (!response.ok) {
+                     const errorText = await response.text(); // Try reading response text
+                     let errorMessage = `HTTP error! status: ${response.status}`;
+                     try {
+                         // Attempt to parse as JSON for structured error
+                         const errorData = JSON.parse(errorText);
+                         errorMessage += `, message: ${errorData.error || 'Unknown error'}`;
+                     } catch (parseError) {
+                         // If not JSON, use the raw text (truncated)
+                         errorMessage += `, response: ${errorText.substring(0, 100)}`;
+                     }
+                     throw new Error(errorMessage);
+                 }
+
+
+                const result = await response.json();
+
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+
+                if (result.success) {
+                    addCardMessage.textContent = 'Card added successfully!';
+                    newGermanInput.value = '';
+                    newEnglishInput.value = '';
+
+                    // Add card locally and schedule for immediate review
+                    const newCardPair = [german, english];
+                    allCards.push(newCardPair); // Add to raw list
+                    const cardId = generateCardId(newCardPair);
+                    if (!cardReviewData[cardId]) { // Avoid duplicates if somehow added twice quickly
+                         const today = getTodayDateString();
+                         cardReviewData[cardId] = {
+                            interval: 0,
+                            easeFactor: DEFAULT_EASE_FACTOR,
+                            nextReviewDate: today, // Due immediately
+                            german: german,
+                            english: english
+                        };
+                        saveReviewData();
+                        // Add to the front of the due queue if no card is currently shown
+                        if (!currentCard) {
+                             prepareDueCards(); // Re-evaluate due cards
+                             showNextCard();
+                        } else {
+                            // Or just add to the end of the current due list
+                             dueCards.push({ id: cardId, ...cardReviewData[cardId] });
+                        }
+                    }
+
+
+                } else {
+                    throw new Error(result.message || 'Unknown error adding card.');
+                }
+
+            } catch (error) {
+                console.error('Error adding card:', error);
+                addCardMessage.textContent = `Error: ${error.message}`;
+            } finally {
+                addCardSubmit.disabled = false;
+                addCardSubmit.textContent = 'Add Card';
+                addCardSubmit.classList.remove('btn-disabled');
+                // Clear success message after a few seconds
+                setTimeout(() => {
+                   if (addCardMessage.textContent === 'Card added successfully!') {
+                       addCardMessage.textContent = '';
+                   }
+                }, 3000);
+            }
+        }
+
+        // --- Initialization ---
+        function initializeApp() {
+            console.log("Initializing app...");
+            fetchCards(); // Load cards from Google Sheet via Apps Script
+        }
+
+        // --- Event Listeners ---
+        loginForm.addEventListener('submit', handleLogin);
+        logoutButton.addEventListener('click', handleLogout);
+        cardElement.addEventListener('click', handleShowAnswer);
+        showAnswerButton.addEventListener('click', handleShowAnswer);
+        againButton.addEventListener('click', () => updateCardReview('again'));
+        goodButton.addEventListener('click', () => updateCardReview('good'));
+        easyButton.addEventListener('click', () => updateCardReview('easy'));
+        addCardForm.addEventListener('submit', handleAddCard);
+
+        // --- Initial Check ---
+        // Check authentication status when the page loads
+        checkAuth();
+
+    </script>
+
+</body>
+</html>
