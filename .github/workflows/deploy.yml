@@ -1,0 +1,54 @@
+name: Deploy to Google Cloud Functions
+
+on:
+  push:
+    branches:
+      - main # Or your default branch
+
+jobs:
+  deploy:
+    name: Deploy Flashcard Proxy Function
+    runs-on: ubuntu-latest
+    permissions:
+        contents: 'read'
+        id-token: 'write' # Required for Workload Identity Federation
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+        # Alternatively, use Workload Identity Federation (more secure, setup required in GCP)
+        # workload_identity_provider: 'projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/YOUR_POOL_ID/providers/YOUR_PROVIDER_ID'
+        # service_account: 'your-service-account-email@your-project-id.iam.gserviceaccount.com'
+
+
+    - name: Deploy Cloud Function
+      uses: google-github-actions/deploy-cloud-functions@v2
+      with:
+        name: flashcardProxy # Must match the function name
+        runtime: nodejs18 # Match the runtime used in manual deployment
+        region: YOUR_GCP_REGION # Replace with your GCP region
+        entry_point: flashcardProxy # Must match the exported function name in index.js
+        source_dir: ./ # Deploy from the root of the repo
+        # project_id: ${{ secrets.GCP_PROJECT_ID }} # Usually inferred from auth context
+        env_vars: GOOGLE_APPS_SCRIPT_URL=${{ secrets.APPS_SCRIPT_URL }},GOOGLE_APPS_SCRIPT_SECRET=${{ secrets.APPS_SCRIPT_SECRET }}
+        https_trigger_security_level: secure_always # Default, requires HTTPS
+        ingress_settings: ALLOW_ALL # Controls network access
+        trigger_http: true # Specifies an HTTP trigger
+        # For Gen 2, allow unauthenticated is set via IAM, but this flag might be needed for initial setup or clarity
+        # Depending on the action version, explicit allow unauthenticated might be via gcloud command in a separate step if needed
+        # Add --gen2 flag if the action doesn't default to it or if needed
+        # flags: '--gen2 --allow-unauthenticated'
+
+
+# Optional: Add a step to explicitly set IAM policy for unauthenticated access if the action doesn't handle it
+# - name: Allow unauthenticated invocations
+#   run: |-
+#     gcloud functions add-invoker-policy-binding flashcardProxy \
+#       --region=YOUR_GCP_REGION \
+#       --member="allUsers" \
+#       --project=${{ secrets.GCP_PROJECT_ID }}
