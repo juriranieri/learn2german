@@ -18,7 +18,7 @@ exports.flashcardProxy = async (req, res) => {
     if (!appsScriptUrl || !secretKey) {
         console.error('Missing required environment variables: GOOGLE_APPS_SCRIPT_URL or GOOGLE_APPS_SCRIPT_SECRET');
         // Send a 500 Internal Server Error response
-        if (!appsappsScriptUrl) {
+        if (!appsScriptUrl) {
             return res.status(500).json({ error: 'Server configuration error. Missing appsScriptUrl' });
         }
         if (!secretKey) {
